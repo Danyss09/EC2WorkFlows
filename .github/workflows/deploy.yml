@@ -1,0 +1,46 @@
+name: Deploy HTML to EC2 with NGINX
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Upload HTML to EC2
+      env:
+        EC2_USER: ec2-user
+        EC2_IP: 34.205.17.226
+        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      run: |
+        # Crea un archivo temporal para la clave privada
+        echo "$SSH_KEY" > WebClave.pem
+        chmod 600 WebClave.pem
+
+        # Copia el archivo HTML al servidor EC2
+        scp -i WebClave.pem index.html $EC2_USER@$EC2_IP:/var/www/myapp/
+
+        # Elimina el archivo de la clave por seguridad
+        rm WebClave.pem
+
+    - name: Reload NGINX
+      env:
+        EC2_USER: ec2-user
+        EC2_IP: 34.205.17.226
+        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      run: |
+        # Crea un archivo temporal para la clave privada
+        echo "$SSH_KEY" > WebClave.pem
+        chmod 600 WebClave.pem
+
+        # Reinicia NGINX en el servidor EC2
+        ssh -i WebClave.pem $EC2_USER@$EC2_IP "sudo systemctl restart nginx"
+
+        # Elimina el archivo de la clave por seguridad
+        rm WebClave.pem
