@@ -3,25 +3,29 @@ name: Deploy HTML to EC2 with NGINX
 on:
   push:
     branches:
-      - main
+      - main  # Se activa cuando haces un push a la rama 'main'
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Define el entorno donde se ejecuta el flujo de trabajo
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v3  # Este paso descarga el código del repositorio
 
     - name: Upload HTML to EC2
       env:
-        EC2_USER: ec2-user
-        EC2_IP: 34.205.17.226
-        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        EC2_USER: ec2-user  # Nombre de usuario para acceder al servidor EC2
+        EC2_IP: 34.205.17.226  # IP pública de tu instancia EC2
+        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}  # Clave privada SSH almacenada en los secretos
       run: |
         # Crea un archivo temporal para la clave privada
         echo "$SSH_KEY" > WebClave.pem
-        chmod 600 WebClave.pem
+        chmod 600 WebClave.pem  # Asegura los permisos de la clave privada
+
+        # Acepta automáticamente la clave del host para evitar el error "Host key verification failed"
+        mkdir -p ~/.ssh
+        ssh-keyscan -H $EC2_IP >> ~/.ssh/known_hosts  # Añadir la clave del host a los "known hosts"
 
         # Copia el archivo HTML al servidor EC2
         scp -i WebClave.pem index.html $EC2_USER@$EC2_IP:/var/www/myapp/
@@ -31,13 +35,17 @@ jobs:
 
     - name: Reload NGINX
       env:
-        EC2_USER: ec2-user
-        EC2_IP: 34.205.17.226
-        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        EC2_USER: ec2-user  # Nombre de usuario para acceder al servidor EC2
+        EC2_IP: 34.205.17.226  # IP pública de tu instancia EC2
+        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}  # Clave privada SSH almacenada en los secretos
       run: |
         # Crea un archivo temporal para la clave privada
         echo "$SSH_KEY" > WebClave.pem
-        chmod 600 WebClave.pem
+        chmod 600 WebClave.pem  # Asegura los permisos de la clave privada
+
+        # Acepta automáticamente la clave del host para evitar el error "Host key verification failed"
+        mkdir -p ~/.ssh
+        ssh-keyscan -H $EC2_IP >> ~/.ssh/known_hosts  # Añadir la clave del host a los "known hosts"
 
         # Reinicia NGINX en el servidor EC2
         ssh -i WebClave.pem $EC2_USER@$EC2_IP "sudo systemctl restart nginx"
