@@ -1,41 +1,29 @@
-name: Deploy HTML to EC2 with NGINX
+name: Deploy to EC2
 
 on:
   push:
     branches:
-      - main
+      - main  # O la rama de tu preferencia
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # El runner de GitHub para ejecutar la acción
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    - name: Check out code
+      uses: actions/checkout@v2
 
-    - name: Upload HTML to EC2
-      env:
-        EC2_USER: ec2-user
-        EC2_IP: 34.205.17.226  # Cambia por tu IP pública
-        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-      run: |
-        echo "$SSH_KEY" > WebClave.pem
-        chmod 600 WebClave.pem
-        mkdir -p ~/.ssh
-        ssh-keyscan -H $EC2_IP >> ~/.ssh/known_hosts
-        # Copiar archivos al nuevo directorio
-        scp -i WebClave.pem index.html $EC2_USER@$EC2_IP:/home/ec2-user/downloads/EC2WorkFlows/
-        rm WebClave.pem
+    - name: Set up SSH key
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}  # Utilizamos el secreto de la clave privada
 
-    - name: Reload NGINX
-      env:
-        EC2_USER: ec2-user
-        EC2_IP: 34.205.17.226  # Cambia por tu IP pública
-        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+    - name: Copy files to EC2
       run: |
-        echo "$SSH_KEY" > WebClave.pem
-        chmod 600 WebClave.pem
-        mkdir -p ~/.ssh
-        ssh-keyscan -H $EC2_IP >> ~/.ssh/known_hosts
-        ssh -i WebClave.pem $EC2_USER@$EC2_IP "sudo systemctl restart nginx"
-        rm WebClave.pem
+        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./ ec2-user@54.161.138.112:/var/www/html/
+      env:
+        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}  # Esta es la clave privada cargada como secreto
+
+    - name: Restart web server (optional)
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ec2-user@54.161.138.112 "sudo systemctl restart httpd"
