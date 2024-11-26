@@ -1,32 +1,33 @@
-name: Deploy to EC2
+name: Deploy to EC2 
 
 on:
   push:
     branches:
-      - main  # O la rama que estés utilizando
+      - main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest  # Puedes cambiarlo si lo deseas
+  deploy: 
+    runs-on: ubuntu-latest
 
     steps:
-      # Paso 1: Hacer checkout del código
-      - name: Checkout code
+      # Paso 1: Hacer checkout del repositorio
+      - name: Checkout repository
         uses: actions/checkout@v2
-        
-      # Paso 2: Configurar la clave SSH para conectarse a la EC2
+
+      # Paso 2: Configurar la clave SSH para conectar con la EC2
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa  # Cargar la clave privada desde los secretos
-          chmod 600 ~/.ssh/id_rsa  # Asegurarse de que los permisos sean correctos
-          ssh-keyscan -H ec2-18-205-116-58.compute-1.amazonaws.com >> ~/.ssh/known_hosts  # Reemplazar con tu IP pública
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 44.207.8.109 >> ~/.ssh/known_hosts
 
-      # Paso 3: Conectarse a EC2 y desplegar los archivos
-      - name: Deploy to EC2
+      # Paso 3: Desplegar los archivos a la instancia EC2
+      - name: Deeploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@ec2-18-205-116-58.compute-1.amazonaws.com << 'EOF'
-            cd /home/ec2-user/downloads/  # O el directorio que estés utilizando
-            git pull origin main  # Para obtener los cambios más recientes del repositorio
-            sudo systemctl restart nginx  # Reiniciar Nginx si es necesario
+          ssh -o StrictHostKeyChecking=no ubuntu@ec2-44-207-8-109.compute-1.amazonaws.com << 'EOF'
+            cd /home/ubuntu/Ec2HtmlYml
+            git pull origin main  # Actualizar los archivos del repositorio
+            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
+            sudo systemctl restart nginx  # Reiniciar Nginx
           EOF
