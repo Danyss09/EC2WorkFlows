@@ -3,27 +3,30 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # O la rama de tu preferencia
+      - main  # O la rama que estés utilizando
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest  # El runner de GitHub para ejecutar la acción
+    runs-on: ubuntu-latest  # Puedes cambiarlo si lo deseas
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+      # Paso 1: Hacer checkout del código
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      # Paso 2: Configurar la clave SSH para conectarse a la EC2
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa  # Cargar la clave privada desde los secretos
+          chmod 600 ~/.ssh/id_rsa  # Asegurarse de que los permisos sean correctos
+          ssh-keyscan -H ec2-18-205-116-58.compute-1.amazonaws.com >> ~/.ssh/known_hosts  # Reemplazar con tu IP pública
 
-    - name: Set up SSH key
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}  # Utilizamos el secreto de la clave privada
-
-    - name: Copy files to EC2
-      run: |
-        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./ ec2-user@54.161.138.112:/var/www/html/
-      env:
-        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}  # Esta es la clave privada cargada como secreto
-
-    - name: Restart web server (optional)
-      run: |
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ec2-user@54.161.138.112 "sudo systemctl restart httpd"
+      # Paso 3: Conectarse a EC2 y desplegar los archivos
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@ec2-18-205-116-58.compute-1.amazonaws.com << 'EOF'
+            cd /home/ec2-user/downloads/  # O el directorio que estés utilizando
+            git pull origin main  # Para obtener los cambios más recientes del repositorio
+            sudo systemctl restart nginx  # Reiniciar Nginx si es necesario
+          EOF
