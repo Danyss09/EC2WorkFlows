@@ -1,4 +1,4 @@
-name: Deploy to EC2 
+name: Deploy to EC2
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  deploy: 
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,8 +25,8 @@ jobs:
       # Paso 3: Desplegar los archivos a la instancia EC2
       - name: Deeploy to EC2
         run: |
-          ssh -i "key_html.pem" -o StrictHostKeyChecking=no ec2-user@ec2-54-242-60-78.compute-1.amazonaws.com << 'EOF'
-            cd /home/ec2-user/Ec2HtmlYml
+          ssh -o StrictHostKeyChecking=no ec2-user@54.242.60.78 << 'EOF'
+            cd /home/ec2-user/EC2WorkFlows
             git pull origin main  # Actualizar los archivos del repositorio
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
