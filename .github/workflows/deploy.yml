@@ -31,8 +31,18 @@ jobs:
             cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
             cd EC2WorkFlows
             git pull origin main  # Actualizar los archivos del repositorio
-            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
-            sudo systemctl restart nginx  # Reiniciar Nginx
+            
+            # Obtener la IP de la instancia
+            INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+            
+            # Modificar el archivo index.html para incluir la IP de la instancia
+            echo "<p>Deployed from instance: $INSTANCE_IP</p>" >> index.html
+            
+            # Copiar el archivo actualizado al directorio de Nginx
+            sudo cp index.html /var/www/html/
+            
+            # Reiniciar Nginx
+            sudo systemctl restart nginx
           EOF
 
       # Paso 4: Desplegar los archivos en la segunda instancia EC2
@@ -42,6 +52,16 @@ jobs:
             cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
             cd EC2WorkFlows
             git pull origin main  # Actualizar los archivos del repositorio
-            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
-            sudo systemctl restart nginx  # Reiniciar Nginx
+            
+            # Obtener la IP de la instancia
+            INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+            
+            # Modificar el archivo index.html para incluir la IP de la instancia
+            echo "<p>Deployed from instance: $INSTANCE_IP</p>" >> index.html
+            
+            # Copiar el archivo actualizado al directorio de Nginx
+            sudo cp index.html /var/www/html/
+            
+            # Reiniciar Nginx
+            sudo systemctl restart nginx
           EOF
