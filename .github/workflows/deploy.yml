@@ -3,7 +3,6 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - qa
       - main
 
 jobs:
@@ -16,47 +15,45 @@ jobs:
         uses: actions/checkout@v2
 
       # Paso 2: Configurar la clave SSH para conectar con las EC2
-      - name: Set up SSH key and AWS region
+      - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Configurar la región de AWS
-          export AWS_REGION=us-east-1  # Reemplaza con tu región
           # Agregar las direcciones IP de las instancias EC2
-          ssh-keyscan -H 54.224.184.177 >> ~/.ssh/known_hosts
-          ssh-keyscan -H 3.88.135.192 >> ~/.ssh/known_hosts
-          ssh-keyscan -H 54.158.52.36 >> ~/.ssh/known_hosts
-          ssh-keyscan -H 54.210.25.119 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 3.86.86.51 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 54.166.247.208 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 52.70.93.208 >> ~/.ssh/known_hosts
 
-      # Paso 3: Desplegar a QA cuando se hace un push en la rama `qa`
-      - name: Deploy to QA (if on qa branch)
-        if: github.ref == 'refs/heads/qa'
+      # Paso 3: Desplegar los archivos en la primera instancia EC2
+      - name: Deploy to Instance 1
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@54.210.25.119 << 'EOF'
-            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
-              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
-            fi
-            cd /home/ec2-user/EC2WorkFlows
-            git pull origin qa  # Actualizar los archivos del repositorio desde la rama `qa`
-            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
-            sudo systemctl restart nginx  # Reiniciar Nginx
+          ssh -o StrictHostKeyChecking=no ec2-user@3.86.86.51 << 'EOF'
+           cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+           cd EC2WorkFlows          
+            git pull origin main
+            sudo cp index.html /var/www/html/
+            sudo systemctl restart nginx
           EOF
 
-      # Paso 4: Desplegar a Producción cuando se hace un pull request en la rama `main`
-      - name: Deploy to Prod (if on main branch)
-        if: github.ref == 'refs/heads/main'
+      # Paso 4: Desplegar los archivos en la segunda instancia EC2
+      - name: Deploy to Instance 2
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@54.224.184.177 << 'EOF'
-            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
-              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
-            fi
-            cd /home/ec2-user/EC2WorkFlows
-            git pull origin main  # Actualizar los archivos del repositorio desde la rama `main`
-            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
-            sudo systemctl restart nginx  # Reiniciar Nginx
+          ssh -o StrictHostKeyChecking=no ec2-user@54.166.247.208 << 'EOF'
+           cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+           cd EC2WorkFlows 
+            git pull origin main
+            sudo cp index.html /var/www/html/
+            sudo systemctl restart nginx
           EOF
-          
-          # Registra las instancias de producción en el grupo de destino de producción
-          aws elbv2 register-targets --target-group-arn arn:aws:elasticloadbalancing:us-east-1:account-id:targetgroup/GrupoProd --targets \
-            Id=i-xxxxxx Id=i-yyyyyy Id=i-zzzzzz
+
+      # Paso 5: Desplegar los archivos en la tercera instancia EC2
+      - name: Deploy to Instance 3
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@52.70.93.208 << 'EOF'
+             cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+           cd EC2WorkFlows 
+            git pull origin main
+            sudo cp index.html /var/www/html/
+            sudo systemctl restart nginx
+          EOF
