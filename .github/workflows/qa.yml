@@ -1,8 +1,9 @@
-name: Deploy to QA
+name: Deploy to EC2
 
 on:
   push:
     branches:
+      - main
       - qa
 
 jobs:
@@ -14,24 +15,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # Paso 2: Configurar la clave SSH y la región de AWS
-      - name: Set up SSH key and AWS region
+      # Paso 2: Configurar la clave SSH para conectar con las EC2
+      - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          export AWS_REGION=us-east-1
+          # Agregar la dirección IP de la instancia EC2
           ssh-keyscan -H 54.237.220.45 >> ~/.ssh/known_hosts
 
-      # Paso 3: Desplegar a QA
-      - name: Deploy to QA
+      # Paso 3: Desplegar los archivos en la instancia de QA (push en qa)
+      - name: Deploy to QA (if qa branch)
+        if: github.ref == 'refs/heads/qa'
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
             if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
               git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
             fi
             cd /home/ec2-user/EC2WorkFlows
-            git pull origin qa  # Actualizar los archivos desde la rama `qa`
-            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
-            sudo systemctl restart nginx  # Reiniciar Nginx
+            git pull origin qa
+            sudo cp index.html /var/www/html/
+            sudo systemctl restart nginx
+          EOF
+
+      # Paso 4: Desplegar los archivos en la instancia de Producción (push en main)
+      - name: Deploy to Production (if main branch)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin main
+            sudo cp index.html /var/www/html/
+            sudo systemctl restart nginx
           EOF
