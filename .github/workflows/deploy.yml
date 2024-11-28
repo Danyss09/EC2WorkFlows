@@ -3,7 +3,9 @@ name: Deploy to EC2
 on:
   push:
     branches:
+      - qa
       - main
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -14,45 +16,67 @@ jobs:
         uses: actions/checkout@v2
 
       # Paso 2: Configurar la clave SSH para conectar con las EC2
-      - name: Set up SSH key
+      - name: Set up SSH key and AWS region
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # Configurar la región de AWS
+          export AWS_REGION=us-east-1  # Reemplaza con tu región
           # Agregar las direcciones IP de las instancias EC2
           ssh-keyscan -H 3.86.86.51 >> ~/.ssh/known_hosts
           ssh-keyscan -H 54.166.247.208 >> ~/.ssh/known_hosts
           ssh-keyscan -H 52.70.93.208 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 54.237.220.45 >> ~/.ssh/known_hosts  # IP para QA
 
-      # Paso 3: Desplegar los archivos en la primera instancia EC2
-      - name: Deploy to Instance 1
+      # Paso 3: Desplegar a QA cuando se hace un push en la rama qa
+      - name: Deploy to QA (if on qa branch)
+        if: github.ref == 'refs/heads/qa'
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin qa  # Actualizar los archivos del repositorio desde la rama qa
+            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
+            sudo systemctl restart nginx  # Reiniciar Nginx
+          EOF
+
+      # Paso 4: Desplegar a Producción cuando se hace un pull request en la rama main
+      - name: Deploy to Prod (if on main branch)
+        if: github.ref == 'refs/heads/main'
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@3.86.86.51 << 'EOF'
-            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
-            cd EC2WorkFlows 
-            git pull origin main  # Actualizar los archivos del repositorio
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin main  # Actualizar los archivos del repositorio desde la rama main
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
           EOF
-
-      # Paso 4: Desplegar los archivos en la segunda instancia EC2
-      - name: Deploy to Instance 2
-        run: |
+          
           ssh -o StrictHostKeyChecking=no ec2-user@54.166.247.208 << 'EOF'
-            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
-            cd EC2WorkFlows 
-            git pull origin main  # Actualizar los archivos del repositorio
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin main  # Actualizar los archivos del repositorio desde la rama main
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
           EOF
 
-      # Paso 5: Desplegar los archivos en la tercera instancia EC2
-      - name: Deploy to Instance 3
-        run: |
           ssh -o StrictHostKeyChecking=no ec2-user@52.70.93.208 << 'EOF'
-            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
-            cd EC2WorkFlows 
-            git pull origin main  # Actualizar los archivos del repositorio
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin main  # Actualizar los archivos del repositorio desde la rama main
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
           EOF
+          
+          # Registra las instancias de producción en el grupo de destino de producción
+          aws elbv2 register-targets --target-group-arn arn:aws:elasticloadbalancing:us-east-1:account-id:targetgroup/GrupoProd --targets \
+            Id=i-xxxxxx Id=i-yyyyyy Id=i-zzzzzz
