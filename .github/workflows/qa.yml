@@ -1,0 +1,36 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+      - qa
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 1: Hacer checkout del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Paso 2: Configurar la clave SSH para conectar con las EC2
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # Agregar la dirección IP de la instancia EC2
+          ssh-keyscan -H 54.237.220.45 >> ~/.ssh/known_hosts
+
+      # Paso 3: Desplegar los archivos en la instancia de QA (push en qa)
+      - name: Deploy to QA (if qa branch)
+        if: github.ref == 'refs/heads/qa'
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
+            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+            cd EC2WorkFlows
+            git pull origin qa
+            sudo cp index.html /var/www/html/
+            sudo systemctl restart nginx
+          EOF
