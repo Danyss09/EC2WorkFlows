@@ -29,25 +29,11 @@ jobs:
         if: github.ref == 'refs/heads/qa'
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
-            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
-              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
-            fi
-            cd /home/ec2-user/EC2WorkFlows
+            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+            cd EC2WorkFlows
             git pull origin qa
             sudo cp index.html /var/www/html/
             sudo systemctl restart nginx
           EOF
 
-      # Paso 4: Desplegar los archivos en la instancia de Producción (push en main)
-      - name: Deploy to Production (if main branch)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
-            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
-              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
-            fi
-            cd /home/ec2-user/EC2WorkFlows
-            git pull origin main
-            sudo cp index.html /var/www/html/
-            sudo systemctl restart nginx
-          EOF
+     
