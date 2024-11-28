@@ -1,0 +1,37 @@
+name: Deploy to QA
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 1: Hacer checkout del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Paso 2: Configurar la clave SSH y la región de AWS
+      - name: Set up SSH key and AWS region
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          export AWS_REGION=us-east-1
+          ssh-keyscan -H 54.237.220.45 >> ~/.ssh/known_hosts
+
+      # Paso 3: Desplegar a QA
+      - name: Deploy to QA
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin qa  # Actualizar los archivos desde la rama `qa`
+            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
+            sudo systemctl restart nginx  # Reiniciar Nginx
+          EOF
