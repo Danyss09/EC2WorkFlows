@@ -3,10 +3,8 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - qa  # Detecta cuando se hace un push en la rama `qa`
-  pull_request:
-    branches:
-      - main  # Detecta cuando se hace un pull request a la rama `main`
+      - qa
+      - main
 
 jobs:
   deploy:
@@ -18,11 +16,13 @@ jobs:
         uses: actions/checkout@v2
 
       # Paso 2: Configurar la clave SSH para conectar con las EC2
-      - name: Set up SSH key
+      - name: Set up SSH key and AWS region
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # Configurar la región de AWS
+          export AWS_REGION=us-east-1  # Reemplaza con tu región
           # Agregar las direcciones IP de las instancias EC2
           ssh-keyscan -H 54.224.184.177 >> ~/.ssh/known_hosts
           ssh-keyscan -H 3.88.135.192 >> ~/.ssh/known_hosts
@@ -30,12 +30,10 @@ jobs:
           ssh-keyscan -H 54.210.25.119 >> ~/.ssh/known_hosts
 
       # Paso 3: Desplegar a QA cuando se hace un push en la rama `qa`
-      # Paso 3: Desplegar a QA cuando se hace un push en la rama `qa`
       - name: Deploy to QA (if on qa branch)
         if: github.ref == 'refs/heads/qa'
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@54.210.25.119 << 'EOF'
-            # Verificar si el directorio EC2WorkFlows existe, si no, clonarlo
             if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
               git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
             fi
@@ -45,42 +43,20 @@ jobs:
             sudo systemctl restart nginx  # Reiniciar Nginx
           EOF
 
-
-      # Paso 4: Desplegar a Producción cuando se crea un pull request a la rama `main`
-      - name: Deploy to Production (if on main branch with PR)
-        if: github.event_name == 'pull_request' && github.base_ref == 'main'  # Este paso solo se ejecuta si se hace un pull request a la rama `main`
+      # Paso 4: Desplegar a Producción cuando se hace un pull request en la rama `main`
+      - name: Deploy to Prod (if on main branch)
+        if: github.ref == 'refs/heads/main'
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@54.224.184.177 << 'EOF'
-            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
-            cd EC2WorkFlows
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
             git pull origin main  # Actualizar los archivos del repositorio desde la rama `main`
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
           EOF
-
-          ssh -o StrictHostKeyChecking=no ec2-user@3.88.135.192 << 'EOF'
-            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
-            cd EC2WorkFlows
-            git pull origin main  # Actualizar los archivos del repositorio desde la rama `main`
-            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
-            sudo systemctl restart nginx  # Reiniciar Nginx
-          EOF
-
-          ssh -o StrictHostKeyChecking=no ec2-user@54.158.52.36 << 'EOF'
-            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
-            cd EC2WorkFlows
-            git pull origin main  # Actualizar los archivos del repositorio desde la rama `main`
-            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
-            sudo systemctl restart nginx  # Reiniciar Nginx
-          EOF
-
-          # Desplegar en las instancias de producción (3 instancias)
-          aws elbv2 register-targets --target-group-arn arn:aws:elasticloadbalancing:region:account-id:targetgroup/GrupoProd --targets \
+          
+          # Registra las instancias de producción en el grupo de destino de producción
+          aws elbv2 register-targets --target-group-arn arn:aws:elasticloadbalancing:us-east-1:account-id:targetgroup/GrupoProd --targets \
             Id=i-xxxxxx Id=i-yyyyyy Id=i-zzzzzz
-
-      # Opción de despliegue para más instancias de producción si es necesario
-      - name: Deploy to additional Production instances (if needed)
-        if: github.event_name == 'pull_request' && github.base_ref == 'main'  # Solo se ejecuta en pull request a `main`
-        run: |
-          # Puedes agregar comandos adicionales si tienes más instancias en producción.
-          echo "Desplegando a instancias adicionales de producción"
