@@ -29,10 +29,8 @@ jobs:
       - name: Deploy to Instance 1
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@3.86.86.51 << 'EOF'
-            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
-              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
-            fi
-            cd /home/ec2-user/EC2WorkFlows
+             cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+           cd EC2WorkFlows 
             git pull origin main  # Actualizar los archivos del repositorio
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
@@ -42,10 +40,8 @@ jobs:
       - name: Deploy to Instance 2
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@54.166.247.208 << 'EOF'
-            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
-              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
-            fi
-            cd /home/ec2-user/EC2WorkFlows
+            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+           cd EC2WorkFlows 
             git pull origin main  # Actualizar los archivos del repositorio
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
@@ -55,10 +51,8 @@ jobs:
       - name: Deploy to Instance 3
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@52.70.93.208 << 'EOF'
-            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
-              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
-            fi
-            cd /home/ec2-user/EC2WorkFlows
+           cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+           cd EC2WorkFlows 
             git pull origin main  # Actualizar los archivos del repositorio
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
