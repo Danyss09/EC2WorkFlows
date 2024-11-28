@@ -30,19 +30,21 @@ jobs:
           ssh-keyscan -H 54.210.25.119 >> ~/.ssh/known_hosts
 
       # Paso 3: Desplegar a QA cuando se hace un push en la rama `qa`
+      # Paso 3: Desplegar a QA cuando se hace un push en la rama `qa`
       - name: Deploy to QA (if on qa branch)
-        if: github.ref == 'refs/heads/qa'  # Este paso se ejecuta solo si se hace un push a la rama `qa`
+        if: github.ref == 'refs/heads/qa'
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@54.210.25.119 << 'EOF'
-            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
-            cd EC2WorkFlows
+            # Verificar si el directorio EC2WorkFlows existe, si no, clonarlo
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
             git pull origin qa  # Actualizar los archivos del repositorio desde la rama `qa`
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
           EOF
-          
-          # Agregar la instancia EC2 de QA al grupo de destino QA
-          aws elbv2 register-targets --target-group-arn arn:aws:elasticloadbalancing:region:account-id:targetgroup/GrupoQA --targets Id=i-xxxxxx
+
 
       # Paso 4: Desplegar a Producción cuando se crea un pull request a la rama `main`
       - name: Deploy to Production (if on main branch with PR)
