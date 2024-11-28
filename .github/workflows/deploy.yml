@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy to EC2
 
 on:
   push:
@@ -14,34 +14,52 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # Paso 2: Configurar la clave SSH y la región de AWS
-      - name: Set up SSH key and AWS region
+      # Paso 2: Configurar la clave SSH para conectar con las EC2
+      - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          export AWS_REGION=us-east-1
+          # Agregar las direcciones IP de las instancias EC2
           ssh-keyscan -H 3.86.86.51 >> ~/.ssh/known_hosts
           ssh-keyscan -H 54.166.247.208 >> ~/.ssh/known_hosts
           ssh-keyscan -H 52.70.93.208 >> ~/.ssh/known_hosts
 
-      # Paso 3: Desplegar a Producción
-      - name: Deploy to Production
+      # Paso 3: Desplegar los archivos en la primera instancia EC2
+      - name: Deploy to Instance 1
         run: |
-          for ip in 3.86.86.51 54.166.247.208 52.70.93.208; do
-            ssh -o StrictHostKeyChecking=no ec2-user@$ip << 'EOF'
-              if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
-                git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
-              fi
-              cd /home/ec2-user/EC2WorkFlows
-              git pull origin main  # Actualizar los archivos desde la rama `main`
-              sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
-              sudo systemctl restart nginx  # Reiniciar Nginx
-            EOF
-          done
+          ssh -o StrictHostKeyChecking=no ec2-user@3.86.86.51 << 'EOF'
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin main  # Actualizar los archivos del repositorio
+            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
+            sudo systemctl restart nginx  # Reiniciar Nginx
+          EOF
 
-      # Paso 4: Registrar instancias en el grupo de destino de producción
-      - name: Register instances in production target group
+      # Paso 4: Desplegar los archivos en la segunda instancia EC2
+      - name: Deploy to Instance 2
         run: |
-          aws elbv2 register-targets --target-group-arn arn:aws:elasticloadbalancing:us-east-1:account-id:targetgroup/GrupoProd --targets \
-            Id=i-xxxxxx Id=i-yyyyyy Id=i-zzzzzz
+          ssh -o StrictHostKeyChecking=no ec2-user@54.166.247.208 << 'EOF'
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin main  # Actualizar los archivos del repositorio
+            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
+            sudo systemctl restart nginx  # Reiniciar Nginx
+          EOF
+
+      # Paso 5: Desplegar los archivos en la tercera instancia EC2
+      - name: Deploy to Instance 3
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@52.70.93.208 << 'EOF'
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin main  # Actualizar los archivos del repositorio
+            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
+            sudo systemctl restart nginx  # Reiniciar Nginx
+          EOF
