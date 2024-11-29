@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v2
 
       # Paso 2: Configurar la clave SSH para conectar con las EC2
-      - name: Set up SSH key and AWS region
+      - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
@@ -54,7 +54,7 @@ jobs:
             git push origin qa  # Realizar push a la rama qa
           EOF
 
-      # Paso 4: Desplegar a Producción cuando se hace un pull request en la rama main
+      # Paso 4: Desplegar a Producción cuando se hace un push en la rama main
       - name: Deploy to Prod (if on main branch)
         if: github.ref == 'refs/heads/main'
         run: |
