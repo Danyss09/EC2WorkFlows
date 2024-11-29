@@ -37,15 +37,22 @@ jobs:
             fi
             cd /home/ec2-user/EC2WorkFlows
             git pull origin qa  # Actualizar los archivos del repositorio desde la rama qa
-            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
-            sudo systemctl restart nginx  # Reiniciar Nginx
 
-            # Paso adicional para realizar un push si hubo cambios
-            git add index.html
+            # Verificar el estado de los archivos para ver si hay cambios
+            git status
+
+            # Copiar index.html al directorio de Nginx y reiniciar el servicio
+            sudo cp index.html /var/www/html/
+            sudo systemctl restart nginx
+
+            # Diagnóstico: Verificar si hay cambios en los archivos
+            git diff
+
+            # Si hay cambios, hacer commit y push
+            git add -A  # Asegurarse de agregar todos los cambios
             git commit -m "Actualización de index.html desde EC2"
             git push origin qa  # Realizar push a la rama qa
           EOF
-
 
       # Paso 4: Desplegar a Producción cuando se hace un pull request en la rama main
       - name: Deploy to Prod (if on main branch)
@@ -80,5 +87,3 @@ jobs:
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
           EOF
-          
-        
