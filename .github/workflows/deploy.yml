@@ -21,8 +21,6 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Configurar la región de AWS
-          export AWS_REGION=us-east-1  # Reemplaza con tu región
           # Agregar las direcciones IP de las instancias EC2
           ssh-keyscan -H 3.86.86.51 >> ~/.ssh/known_hosts
           ssh-keyscan -H 54.166.247.208 >> ~/.ssh/known_hosts
@@ -77,6 +75,4 @@ jobs:
             sudo systemctl restart nginx  # Reiniciar Nginx
           EOF
           
-          # Registra las instancias de producción en el grupo de destino de producción
-          aws elbv2 register-targets --region us-east-1 --target-group-arn arn:aws:elasticloadbalancing:us-east-1:account-id:targetgroup/GrupoProd --targets \
-            Id=i-xxxxxx Id=i-yyyyyy Id=i-zzzzzz
+        
