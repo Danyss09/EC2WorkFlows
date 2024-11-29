@@ -78,5 +78,5 @@ jobs:
           EOF
           
           # Registra las instancias de producción en el grupo de destino de producción
-          aws elbv2 register-targets --target-group-arn arn:aws:elasticloadbalancing:us-east-1:account-id:targetgroup/GrupoProd --targets \
+          aws elbv2 register-targets --region us-east-1 --target-group-arn arn:aws:elasticloadbalancing:us-east-1:account-id:targetgroup/GrupoProd --targets \
             Id=i-xxxxxx Id=i-yyyyyy Id=i-zzzzzz
