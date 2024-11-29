@@ -39,7 +39,13 @@ jobs:
             git pull origin qa  # Actualizar los archivos del repositorio desde la rama qa
             sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
             sudo systemctl restart nginx  # Reiniciar Nginx
+
+            # Paso adicional para realizar un push si hubo cambios
+            git add index.html
+            git commit -m "Actualización de index.html desde EC2"
+            git push origin qa  # Realizar push a la rama qa
           EOF
+
 
       # Paso 4: Desplegar a Producción cuando se hace un pull request en la rama main
       - name: Deploy to Prod (if on main branch)
