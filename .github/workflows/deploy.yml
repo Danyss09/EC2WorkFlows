@@ -14,15 +14,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # Paso 2: Configurar la clave SSH para conectar con la EC2
+      # Paso 2: Configurar la clave SSH para conectar con las EC2
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # Agregar las direcciones IP de las instancias EC2
           ssh-keyscan -H 3.86.86.51 >> ~/.ssh/known_hosts
           ssh-keyscan -H 54.166.247.208 >> ~/.ssh/known_hosts
           ssh-keyscan -H 52.70.93.208 >> ~/.ssh/known_hosts
+          # Si estamos en la rama QA, agregar la IP de la instancia de QA
+          ssh-keyscan -H 54.237.220.45 >> ~/.ssh/known_hosts  # IP para QA
 
       # Paso 3: Desplegar a Producción cuando se hace un push en la rama main
       - name: Deploy to Prod Instance 1
@@ -57,6 +60,20 @@ jobs:
             fi
             cd /home/ec2-user/EC2WorkFlows
             git pull origin main
+            sudo cp index.html /var/www/html/
+            sudo systemctl restart nginx
+          EOF
+
+      # Paso 4: Desplegar a QA cuando se hace un push en la rama qa
+      - name: Deploy to QA
+        if: github.ref == 'refs/heads/qa'
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
+            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
+              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
+            fi
+            cd /home/ec2-user/EC2WorkFlows
+            git pull origin qa  # Actualizar los archivos del repositorio desde la rama qa
             sudo cp index.html /var/www/html/
             sudo systemctl restart nginx
           EOF
