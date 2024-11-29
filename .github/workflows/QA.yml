@@ -3,7 +3,7 @@ name: Deploy to EC2 - QA
 on:
   push:
     branches:
-      - qa
+      - qa  # Se ejecuta cuando hay un push a la rama qa
 
 jobs:
   deploy:
@@ -14,25 +14,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # Paso 2: Configurar la clave SSH para conectar con la EC2
+      # Paso 2: Configurar la clave SSH para conectar con la instancia EC2 de QA
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa  # Usa la clave SSH desde los secretos de GitHub
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 54.237.220.45 >> ~/.ssh/known_hosts  # IP para QA
+          ssh-keyscan -H 54.237.220.45 >> ~/.ssh/known_hosts  # IP de la instancia EC2 de QA
 
-      # Paso 3: Desplegar a QA cuando se hace un push en la rama qa
-      - name: Deploy to QA
+      # Paso 3: Desplegar los archivos en la instancia EC2 de QA cuando se hace un push en la rama qa
+      - name: Deploy to QA (if on qa branch)
+        if: github.ref == 'refs/heads/qa'
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
-            if [ ! -d "/home/ec2-user/EC2WorkFlows" ]; then
-              git clone https://github.com/Danyss09/EC2WorkFlows.git /home/ec2-user/EC2WorkFlows
-            fi
-            cd /home/ec2-user/EC2WorkFlows
-            git pull origin qa  # Actualizar los archivos del repositorio desde la rama qa
-
-            # Copiar index.html al directorio de Nginx y reiniciar el servicio
-            sudo cp index.html /var/www/html/
-            sudo systemctl restart nginx
+            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+            cd EC2WorkFlows
+            git pull origin qa  # Traer los últimos cambios de la rama qa
+            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
+            sudo systemctl restart nginx  # Reiniciar Nginx para aplicar los cambios
           EOF
