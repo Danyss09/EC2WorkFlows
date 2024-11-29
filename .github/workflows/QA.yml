@@ -3,6 +3,7 @@ name: Deploy to EC2 - QA
 on:
   push:
     branches:
+      - main
       - qa  # Se ejecuta cuando hay un push a la rama qa
 
 jobs:
@@ -23,7 +24,7 @@ jobs:
           ssh-keyscan -H 54.237.220.45 >> ~/.ssh/known_hosts  # IP de la instancia EC2 de QA
 
       # Paso 3: Desplegar los archivos en la instancia EC2 de QA cuando se hace un push en la rama qa
-      - name: Deploy to QA (if on qa branch)
+      - name: Deploy to QA (if qa branch)
         if: github.ref == 'refs/heads/qa'
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@54.237.220.45 << 'EOF'
