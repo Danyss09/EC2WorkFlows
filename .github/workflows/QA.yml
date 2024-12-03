@@ -21,7 +21,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa  # Usa la clave SSH desde los secretos de GitHub
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 54.209.114.74 >> ~/.ssh/known_hosts  # IP de la instancia EC2 de QA
+          ssh-keyscan -H 54.209.114.74/ >> ~/.ssh/known_hosts  # IP de la instancia EC2 de QA
 
       # Paso 3: Desplegar los archivos en la instancia EC2 de QA cuando se hace un push en la rama qa
       - name: Deploy to QA (if test branch)
