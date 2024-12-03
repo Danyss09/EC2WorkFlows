@@ -21,14 +21,14 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa  # Usar la clave SSH almacenada en los secretos de GitHub
           chmod 600 ~/.ssh/id_rsa
           # Agregar las direcciones IP de las instancias EC2
-          ssh-keyscan -H 3.86.86.51 >> ~/.ssh/known_hosts  # IP de la instancia EC2 de Producción 1
-          ssh-keyscan -H 54.166.247.208 >> ~/.ssh/known_hosts  # IP de la instancia EC2 de Producción 2
-          ssh-keyscan -H 52.70.93.208 >> ~/.ssh/known_hosts  # IP de la instancia EC2 de Producción 3
+          ssh-keyscan -H 34.227.115.237 >> ~/.ssh/known_hosts  # IP de la instancia EC2 de Producción 1
+          ssh-keyscan -H 44.202.45.103 >> ~/.ssh/known_hosts  # IP de la instancia EC2 de Producción 2
+          ssh-keyscan -H 54.173.242.40 >> ~/.ssh/known_hosts  # IP de la instancia EC2 de Producción 3
 
       # Paso 3: Desplegar a la primera instancia EC2 de Producción
       - name: Deploy to Prod Instance 1
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@3.86.86.51 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ec2-user@34.227.115.237 << 'EOF'
             cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
             cd EC2WorkFlows
             git pull origin main  # Actualizar los archivos del repositorio desde la rama main
@@ -39,7 +39,7 @@ jobs:
       # Paso 4: Desplegar a la segunda instancia EC2 de Producción
       - name: Deploy to Prod Instance 2
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@54.166.247.208 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ec2-user@44.202.45.103 << 'EOF'
             cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
             cd EC2WorkFlows
             git pull origin main  # Actualizar los archivos del repositorio desde la rama main
@@ -50,7 +50,7 @@ jobs:
       # Paso 5: Desplegar a la tercera instancia EC2 de Producción
       - name: Deploy to Prod Instance 3
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@52.70.93.208 << 'EOF'
+          ssh -o StrictHostKeyChecking=no ec2-user@54.173.242.40 << 'EOF'
             cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
             cd EC2WorkFlows
             git pull origin main  # Actualizar los archivos del repositorio desde la rama main
