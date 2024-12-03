@@ -27,9 +27,9 @@ jobs:
         if: github.ref == 'refs/heads/test'
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@54.209.114.74 << 'EOF'
-            cd /home/ec2-user/Html-Balance || git clone https://github.com/lessalcu/Html-Balance.git
-            cd Html-Balance
-            git pull origin test
-            sudo cp index.html /var/www/html/
-            sudo systemctl restart nginx
+            cd /home/ec2-user/EC2WorkFlows || git clone https://github.com/Danyss09/EC2WorkFlows.git
+            cd EC2WorkFlows
+            git pull origin main  # Actualizar los archivos del repositorio desde la rama main
+            sudo cp index.html /var/www/html/  # Copiar index.html al directorio de Nginx
+            sudo systemctl restart nginx  # Reiniciar Nginx para aplicar los cambios
           EOF
